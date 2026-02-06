@@ -11,17 +11,17 @@ import os
 
 from typing import Optional, Tuple, List
 from pathlib import Path
-from types import SimpleNamespace
+from munch import Munch
 
 from src.config.manager import get_config
-from human_simulator import HumanSimulator
+from src.modules.human_simulator import HumanSimulator
 
 logger = logging.getLogger(__name__)
 
 class BrowserController:
     """浏览器控制器"""
     
-    def __init__(self, simulator: HumanSimulator):
+    def __init__(self, simulator: HumanSimulator = HumanSimulator):
         """
         初始化浏览器控制器
         
@@ -29,7 +29,7 @@ class BrowserController:
             simulator: 人类行为模拟器
         """
         dict_config = get_config().get_all()
-        self.config = SimpleNamespace(**dict_config)
+        self.config = Munch.fromDict(dict_config)
         self.simulator = simulator
 
         

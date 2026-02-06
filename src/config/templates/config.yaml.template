@@ -20,24 +20,26 @@ human_simulator:
 
 # 浏览器配置
 browser:
-  chrome_path: null       # Chrome可执行文件路径，null则自动查找
-  window_width: 1366      # 浏览器窗口宽度
-  window_height: 768      # 浏览器窗口高度
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-  headless: false         # 是否无头模式运行
-  disable_images: true    # 是否禁用图片加载以加速
-  proxy: null             # 代理服务器，如 "http://127.0.0.1:8080"
-  user_data_dir: null     # 用户数据目录，用于保存cookies
-
-# 京东账户配置
-jd_account:
-  username: ""            # 京东用户名/手机号
-  password: ""            # 京东密码（将自动加密）
-  login_method: "password" # 登录方式：password, qr_code, sms
-  max_login_attempts: 3   # 最大登录尝试次数
-  login_timeout: 60       # 登录超时时间（秒）
-  save_cookies: true      # 是否保存cookies
-  cookies_expiry_days: 7  # cookies过期天数
+  path:
+    chrome_path: null       # Chrome可执行文件路径，null则自动查找
+  physical:
+    window_width: 1366      # 浏览器窗口宽度
+    window_height: 768      # 浏览器窗口高度
+  network:
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    headless: false         # 是否无头模式运行
+    disable_images: true    # 是否禁用图片加载以加速
+    proxy: null             # 代理服务器，如 "http://127.0.0.1:8080"
+    user_data_dir: null     # 用户数据目录，用于保存cookies
+  # 京东账户配置
+  jd_account:
+    username: ""            # 京东用户名/手机号
+    password: ""            # 京东密码（将自动加密）
+    login_method: "password" # 登录方式：password, qr_code, sms
+    max_login_attempts: 3   # 最大登录尝试次数
+    login_timeout: 60       # 登录超时时间（秒）
+    save_cookies: true      # 是否保存cookies
+    cookies_expiry_days: 7  # cookies过期天数
 
 # 搜索配置
 search:
