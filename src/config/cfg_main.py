@@ -1,18 +1,10 @@
 # cfg_main.py
 import logging
 from src.config import init_config, get_config
-from src.config.manager import get_config_manager
-from typing import Any, Dict
+from src.config.manager import get_dict_config as gdc
 
-def get_dict_config() -> Dict[str, Any]:
-    """
-    获取字典形式的配置
-    
-    Returns:
-        配置字典
-    """
-    return get_config_manager().dict_config
-
+def get_dict_config():
+    return gdc()
 
 # 初始化配置（如果配置文件不存在，会从模板创建）
 config_manager = init_config(

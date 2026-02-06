@@ -8,11 +8,11 @@ from pathlib import Path
 from typing import Dict, Any, Optional, Union
 from datetime import datetime
 
-from src.config.exceptions import ConfigError, ConfigFileNotFoundError, ConfigValidationError
-from src.config.models import AppConfig, ConfigAccessor
-from src.config.loader import ConfigLoader
-from src.config.validator import ConfigValidator
-from src.config.template import ConfigTemplate
+from .exceptions import ConfigError, ConfigFileNotFoundError, ConfigValidationError
+from .models import AppConfig, ConfigAccessor
+from .loader import ConfigLoader
+from .validator import ConfigValidator
+from .template import ConfigTemplate
 
 logger = logging.getLogger(__name__)
 
