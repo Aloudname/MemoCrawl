@@ -1,0 +1,147 @@
+# 价格跟踪器配置文件
+# 版本: 1.0.0
+
+version: "1.0.0"
+environment: "development"  # development, testing, production
+debug: false
+
+# 反检测配置
+anti_detection:
+  ip_rotation:                          # IP轮换
+    enabled: false                      # 是否启用IP轮换
+    proxy_list: []                      # 代理列表
+    change_interval: 3600               # 更换间隔（秒）
+    proxy_type: "http"                  # 代理类型：http, socks5
+  mimic_human_pattern: true             # 模拟人类行为模式
+  random_behavior:                      # 随机行为
+    mouse_movement: true                # 随机鼠标移动
+    click_offset: true                  # 点击偏移
+    typing_speed_variation: true        # 输入速度变化
+    idle_behavior: true                 # 空闲行为
+    scroll_variation: true              # 滚动变化
+  rotate_user_agent: true               # 是否轮换User-Agent
+  user_agents_pool: []                  # User-Agent池
+
+
+
+
+# 浏览器配置
+browser:
+  path:
+    chrome_path: null       # Chrome可执行文件路径，null则自动查找
+  physical:
+    window_width: 1366      # 浏览器窗口宽度
+    window_height: 768      # 浏览器窗口高度
+  network:
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    headless: false         # 是否无头模式运行
+    disable_images: true    # 是否禁用图片加载以加速
+    proxy: null             # 代理服务器，如 "http://127.0.0.1:8080"
+    user_data_dir: null     # 用户数据目录，用于保存cookies
+  # 京东账户配置
+  jd_account:
+    username: ""            # 京东用户名/手机号
+    password: ""            # 京东密码（将自动加密）
+    login_method: "password" # 登录方式：password, qr_code, sms
+    max_login_attempts: 3   # 最大登录尝试次数
+    login_timeout: 60       # 登录超时时间（秒）
+    save_cookies: true      # 是否保存cookies
+    cookies_expiry_days: 7  # cookies过期天数
+
+# 数据库配置
+database:
+  type: "sqlite"                        # 数据库类型：sqlite, mysql, postgresql
+  path: "data/price_data.db"            # SQLite数据库文件路径
+  host: "localhost"                     # 数据库主机
+  port: 3306                            # 数据库端口
+  name: "price_tracker"                 # 数据库名称
+  user: ""                              # 数据库用户名
+  password: ""                          # 数据库密码（将自动加密）
+  backup_days: 7                        # 备份保留天数
+  auto_backup: true                     # 是否自动备份
+  backup_dir: "backups"                 # 备份目录
+  connection_pool_size: 5               # 数据库连接池大小
+
+# 人类行为模拟配置
+human_simulator:
+  min_delay: 0.1          # 最小延迟（秒）
+  max_delay: 0.5          # 最大延迟（秒）
+  think_time_min: 0.2     # 最小思考时间（秒）
+  think_time_max: 1.0     # 最大思考时间（秒）
+  speed_min: 0.3          # 最小移动速度（秒）
+  speed_max: 0.8          # 最大移动速度（秒）
+  curve_factor: 0.3       # 鼠标曲线移动程度（0-1）
+  jitter_factor: 0.05     # 鼠标抖动程度（0-1）
+  error_probability: 0.01 # 输入错误概率（0-1）
+  error_correction_probability: 0.8  # 纠错概率（0-1）
+
+# 监控配置
+monitoring:
+  log_level: "INFO"                     # 日志级别：DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_file: "logs/price_tracker.log"    # 日志文件路径
+  max_log_size: 10485760                # 单个日志文件最大大小（字节）
+  backup_count: 5                       # 备份文件数量
+  log_format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  performance_monitoring: true          # 是否监控性能
+  error_notification:                   # 错误通知
+    enabled: false                      # 是否启用错误通知
+    email: ""                           # 通知邮箱
+    telegram_token: ""                  # Telegram Bot Token（将自动加密）
+    telegram_chat_id: ""                # Telegram Chat ID
+    webhook_url: ""                     # Webhook URL
+    notify_on_errors: ["critical", "error"] # 通知的错误级别
+
+
+# 价格提醒配置
+price_alert:
+  enabled: false                        # 是否启用价格提醒
+  check_interval: 3600                  # 检查间隔（秒）
+  drop_threshold: 0.1                   # 降价提醒阈值（百分比）
+  rise_threshold: 0.2                   # 涨价提醒阈值（百分比）
+  notification_methods: ["console"]     # 通知方式
+
+# 定时任务配置
+scheduler:
+  enabled: true                         # 是否启用定时任务
+  execution_times:                      # 执行时间列表（HH:MM格式）
+    - "10:00"
+    - "16:00"
+    - "22:00"
+  max_runtime: 1800                     # 单次运行最长时间（秒）
+  retry_attempts: 3                     # 失败重试次数
+  retry_delay: 300                      # 重试延迟（秒）
+  timezone: "Asia/Shanghai"             # 时区
+
+
+# 搜索配置
+search:
+  keywords:               # 搜索关键词列表
+    - "ddr4内存 笔记本电脑组件 32G"
+  max_pages: 3            # 最大爬取页数
+  scroll_pause: 1.0       # 滚动后暂停时间（秒）
+  items_per_page: 30      # 每页商品数量
+  sort_method: "default"  # 排序方式：default, price_asc, price_desc, sales
+  filter_conditions:      # 筛选条件
+    brands: []            # 品牌筛选
+    price_range: [0, 9999] # 价格范围
+    seller_type: "all"    # 卖家类型：all, jd_self, third_party
+    min_rating: 0.0       # 最低评分
+    min_sales: 0          # 最低销量
+  smart_scroll: true      # 是否智能滚动
+
+# 视觉识别配置
+vision:
+  templates_dir: "templates"            # 模板图片目录
+  match_threshold: 0.8                  # 模板匹配阈值（0-1）
+  ocr_language: "chi_sim+eng"           # OCR识别语言
+  preprocessing:                        # 图像预处理
+    denoise: true                       # 去噪
+    binarization: true                  # 二值化
+    contrast_enhance: true              # 对比度增强
+    resize_factor: 2.0                  # 图像放大倍数
+  debug_save_images: false              # 是否保存调试图像
+  debug_save_dir: "debug_images"        # 调试图像保存目录
+
+
+
+

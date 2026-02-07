@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品数据库管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        .stat-card {
+            transition: transform 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <!-- 头部 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="display-5">📦 商品数据库管理系统</h1>
+                <p class="text-muted">管理您的商品数据，支持导入、查询、导出功能</p>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="row mb-4" id="stats-container">
+            <!-- 动态加载统计信息 -->
+        </div>
+
+        <!-- 查询和操作区域 -->
+        <div class="row">
+            <!-- 左侧：查询和添加 -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">🔍 查询商品</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">商品名称</label>
+                            <input type="text" class="form-control" id="search-name" placeholder="输入商品名称...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">商品分类</label>
+                            <select class="form-select" id="search-category">
+                                <option value="">所有分类</option>
+                                <!-- 分类选项动态加载 -->
+                            </select>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label class="form-label">最低价格</label>
+                                <input type="number" class="form-control" id="min-price" placeholder="0">
+                            </div>
+                            <div class="col">
+                                <label class="form-label">最高价格</label>
+                                <input type="number" class="form-control" id="max-price" placeholder="10000">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100" onclick="searchProducts()">搜索</button>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">➕ 添加商品</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">商品名称 *</label>
+                            <input type="text" class="form-control" id="add-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">商品分类 *</label>
+                            <input type="text" class="form-control" id="add-category" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">价格 *</label>
+                            <input type="number" step="0.01" class="form-control" id="add-price" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">来源URL</label>
+                            <input type="url" class="form-control" id="add-url">
+                        </div>
+                        <button class="btn btn-success w-100" onclick="addProduct()">添加商品</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">📁 数据管理</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">导入JSON文件</label>
+                            <input type="file" class="form-control" id="import-file" accept=".json">
+                        </div>
+                        <button class="btn btn-info w-100 mb-3" onclick="importData()">导入数据</button>
+                        
+                        <label class="form-label">导出数据格式</label>
+                        <select class="form-select mb-3" id="export-format">
+                            <option value="json">JSON</option>
+                            <option value="csv">CSV</option>
+                            <option value="excel">Excel</option>
+                        </select>
+                        <button class="btn btn-warning w-100" onclick="exportData()">导出数据</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：商品列表和图表 -->
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">📋 商品列表</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="products-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>名称</th>
+                                        <th>分类</th>
+                                        <th>价格</th>
+                                        <th>添加时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="products-body">
+                                    <!-- 动态加载商品数据 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center" id="loading-spinner">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h6>📊 商品分类分布</h6>
+                            <div id="category-chart"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h6>💰 价格分布</h6>
+                            <div id="price-chart"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStatistics();
+            loadCategories();
+            loadProducts();
+            loadCharts();
+        });
+
+        // 加载统计信息
+        async function loadStatistics() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                const statsHtml = `
+                    <div class="col-md-3">
+                        <div class="card stat-card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h1 class="display-6">${stats.total_products}</h1>
+                                <p class="mb-0">总商品数</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h1 class="display-6">${stats.total_categories}</h1>
+                                <p class="mb-0">分类数量</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h1 class="display-6">¥${stats.avg_price.toFixed(2)}</h1>
+                                <p class="mb-0">平均价格</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card bg-warning text-white">
+                            <div class="card-body text-center">
+                                <h1 class="display-6">¥${stats.min_price} - ¥${stats.max_price}</h1>
+                                <p class="mb-0">价格范围</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('stats-container').innerHTML = statsHtml;
+            } catch (error) {
+                console.error('加载统计信息失败:', error);
+            }
+        }
+
+        // 加载分类选项
+        async function loadCategories() {
+            try {
+                const products = await fetch('/api/products').then(r => r.json());
+                const categories = [...new Set(products.map(p => p.category))].sort();
+                
+                const categorySelect = document.getElementById('search-category');
+                categorySelect.innerHTML = '<option value="">所有分类</option>';
+                
+                categories.forEach(category => {
+                    if (category) {
+                        const option = document.createElement('option');
+                        option.value = category;
+                        option.textContent = category;
+                        categorySelect.appendChild(option);
+                    }
+                });
+            } catch (error) {
+                console.error('加载分类失败:', error);
+            }
+        }
+
+        // 搜索商品
+        async function searchProducts() {
+            const name = document.getElementById('search-name').value;
+            const category = document.getElementById('search-category').value;
+            const minPrice = document.getElementById('min-price').value;
+            const maxPrice = document.getElementById('max-price').value;
+            
+            let url = `/api/products?`;
+            if (name) url += `name=${encodeURIComponent(name)}&`;
+            if (category) url += `category=${encodeURIComponent(category)}&`;
+            if (minPrice) url += `min_price=${minPrice}&`;
+            if (maxPrice) url += `max_price=${maxPrice}`;
+            
+            await loadProducts(url);
+        }
+
+        // 加载商品数据
+        async function loadProducts(apiUrl = '/api/products') {
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const productsBody = document.getElementById('products-body');
+            
+            loadingSpinner.style.display = 'block';
+            productsBody.innerHTML = '';
+            
+            try {
+                const response = await fetch(apiUrl);
+                const products = await response.json();
+                
+                if (products.length === 0) {
+                    productsBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                暂无商品数据
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    productsBody.innerHTML = products.map(product => `
+                        <tr>
+                            <td>${product.id}</td>
+                            <td>${product.name}</td>
+                            <td><span class="badge bg-secondary">${product.category}</span></td>
+                            <td class="text-success fw-bold">¥${product.price?.toFixed(2) || '0.00'}</td>
+                            <td>${new Date(product.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('');
+                }
+                
+                loadCharts(); // 重新加载图表
+                
+            } catch (error) {
+                console.error('加载商品失败:', error);
+                productsBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center text-danger py-4">
+                            加载失败，请刷新重试
+                        </td>
+                    </tr>
+                `;
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        }
+
+        // 添加商品
+        async function addProduct() {
+            const name = document.getElementById('add-name').value;
+            const category = document.getElementById('add-category').value;
+            const price = document.getElementById('add-price').value;
+            const url = document.getElementById('add-url').value;
+            
+            if (!name || !category || !price) {
+                alert('请填写所有必填字段！');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/add_product', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        category: category,
+                        price: parseFloat(price),
+                        source_url: url
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('商品添加成功！');
+                    // 清空表单
+                    document.getElementById('add-name').value = '';
+                    document.getElementById('add-category').value = '';
+                    document.getElementById('add-price').value = '';
+                    document.getElementById('add-url').value = '';
+                    
+                    // 重新加载数据
+                    loadProducts();
+                    loadStatistics();
+                    loadCategories();
+                } else {
+                    alert('添加失败: ' + result.error);
+                }
+            } catch (error) {
+                console.error('添加商品失败:', error);
+                alert('添加失败，请重试！');
+            }
+        }
+
+        // 导入数据
+        async function importData() {
+            const fileInput = document.getElementById('import-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('请选择JSON文件！');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/import', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('数据导入成功！');
+                    fileInput.value = '';
+                    
+                    // 重新加载数据
+                    loadProducts();
+                    loadStatistics();
+                    loadCategories();
+                } else {
+                    alert('导入失败: ' + result.error);
+                }
+            } catch (error) {
+                console.error('导入失败:', error);
+                alert('导入失败，请重试！');
+            }
+        }
+
+        // 导出数据
+        function exportData() {
+            const format = document.getElementById('export-format').value;
+            window.open(`/api/export?format=${format}`, '_blank');
+        }
+
+        // 加载图表
+        async function loadCharts() {
+            try {
+                const response = await fetch('/api/chart');
+                const chartData = await response.json();
+                
+                if (chartData.category_chart) {
+                    const categoryChart = JSON.parse(chartData.category_chart);
+                    Plotly.newPlot('category-chart', categoryChart.data, categoryChart.layout);
+                }
+                
+                if (chartData.price_chart) {
+                    const priceChart = JSON.parse(chartData.price_chart);
+                    Plotly.newPlot('price-chart', priceChart.data, priceChart.layout);
+                }
+            } catch (error) {
+                console.error('加载图表失败:', error);
+            }
+        }
+    </script>
+</body>
+</html>
