@@ -95,17 +95,17 @@ class BrowserController:
             logger.info(f"正在导航到: {url}")
             
             # 模拟人类行为：按Ctrl+L聚焦地址栏
-            self.simulator.hotkey_human('ctrl', 'l')
+            self.simulator.hotkey('ctrl', 'l')
             
             # 等待地址栏聚焦
             self.simulator.idle_behavior(min_duration=0.5, max_duration=1.0)
             
             # 清除当前URL（如果有）
-            self.simulator.press_key_human('a', presses=1)  # 全选
-            self.simulator.press_key_human('delete', presses=1)
+            self.simulator.press_key('a', presses=1)  # 全选
+            self.simulator.press_key('delete', presses=1)
             
             # 输入URL
-            self.simulator.type_human(
+            self.simulator.type_in(
                 url,
                 min_delay=0.05,
                 max_delay=0.2,
@@ -113,7 +113,7 @@ class BrowserController:
             )
             
             # 按回车键
-            self.simulator.press_key_human('enter')
+            self.simulator.press_key('enter')
             
             # 等待页面加载
             self.simulator.idle_behavior(min_duration=3, max_duration=7)
@@ -137,7 +137,7 @@ class BrowserController:
                 logger.info("正在关闭浏览器...")
                 
                 # 模拟人类行为：按Alt+F4关闭窗口
-                self.simulator.hotkey_human('alt', 'f4')
+                self.simulator.hotkey('alt', 'f4')
                 
                 # 等待浏览器关闭
                 self.simulator.idle_behavior(min_duration=1, max_duration=2)
@@ -183,7 +183,7 @@ class BrowserController:
         """
         try:
             logger.info("刷新页面...")
-            self.simulator.hotkey_human('ctrl', 'r')
+            self.simulator.hotkey('ctrl', 'r')
             self.simulator.idle_behavior(min_duration=2, max_duration=4)
             return True
         except Exception as e:
@@ -199,9 +199,43 @@ class BrowserController:
         """
         try:
             logger.info("返回上一页...")
-            self.simulator.hotkey_human('alt', 'left')
+            self.simulator.hotkey('alt', 'left')
             self.simulator.idle_behavior(min_duration=2, max_duration=4)
             return True
         except Exception as e:
             logger.error(f"返回上一页失败: {e}")
             return False
+        
+    def navi_to_search(self, if_logged: bool = False) -> bool:
+        """
+        导航到搜索页面
+        
+        Args:
+            if_logged: 是否已登录
+            
+        Returns:
+            bool: 是否成功
+        """
+        if not if_logged:
+            self.simulator.move_mouse(285, 240)
+            self.simulator.click(double_click=True)
+            self.simulator.delay(5, 10)
+            self.simulator.move_mouse(1552, 780)
+            self.simulator.click()
+            self.simulator.delay(2, 4)
+            self.simulator.move_mouse(1420, 873)
+            self.simulator.click()
+            self.simulator.delay(1, 2)
+            self.simulator.hotkey('ctrl', 'a')
+            self.simulator.delay(0.1, 0.5)
+            self.simulator.press_key('backspace')
+            self.simulator.type_in(self.config.browser.jd_account.username)
+            self.simulator.move_mouse(1424, 957)
+            self.simulator.click()
+            self.simulator.delay(0.1, 0.2)
+            self.simulator.hotkey('ctrl', 'a')
+            self.simulator.delay(0.1, 0.5)
+            self.simulator.press_key('backspace')
+            self.simulator.type_in(self.config.browser.jd_account.password)
+            self.simulator.move_mouse(1652, 1066)
+            self.simulator.click(double_click=True)

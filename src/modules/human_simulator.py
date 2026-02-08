@@ -31,20 +31,20 @@ class ScrollDirection(Enum):
 @dataclass
 class HumanDelayConfig:
     """人类延迟配置"""
-    min_delay: float = 0.1
-    max_delay: float = 0.5
-    think_time_min: float = 0.2
-    think_time_max: float = 1.0
-    reaction_time_min: float = 0.1
-    reaction_time_max: float = 0.3
+    min_delay: float = 0.3
+    max_delay: float = 0.6
+    think_time_min: float = 0.5
+    think_time_max: float = 2.0
+    reaction_time_min: float = 0.2
+    reaction_time_max: float = 0.4
 
 @dataclass
 class MouseMoveConfig:
     """鼠标移动配置"""
     speed_min: float = 0.3  # 最小速度（秒）
     speed_max: float = 0.8  # 最大速度（秒）
-    curve_factor: float = 0.3  # 曲线因子，0为直线，1为最大弯曲
-    jitter_factor: float = 0.05  # 抖动因子
+    curve_factor: float = 0.4  # 曲线因子，0为直线，1为最大弯曲
+    jitter_factor: float = 0.1  # 抖动因子
 
 class HumanSimulator:
     """
@@ -114,10 +114,10 @@ class HumanSimulator:
         
         return delay
     
-    def _human_delay(self, 
+    def delay(self, 
                     min_val: Optional[float] = None,
                     max_val: Optional[float] = None,
-                    purpose: str = "thinking") -> None:
+                    purpose: str = "custom") -> None:
         """
         执行人类化的延迟
         
@@ -132,6 +132,8 @@ class HumanSimulator:
         elif purpose == "reaction":
             min_val = min_val or self.human_delay.reaction_time_min
             max_val = max_val or self.human_delay.reaction_time_max
+        else:
+            pass
         
         delay = self._get_random_delay(min_val, max_val)
         logger.debug(f"执行{purpose}延迟: {delay:.2f}秒")
@@ -209,9 +211,11 @@ class HumanSimulator:
         
         return jittered_path
     
-    def move_mouse_human(self, 
+    def move_mouse(self, 
                         target_x: int, 
                         target_y: int,
+                        xy_blur: bool = True,
+                        r: Optional[int] = 7,
                         speed: Optional[float] = None,
                         curve_factor: Optional[float] = None) -> None:
         """
@@ -220,6 +224,8 @@ class HumanSimulator:
         Args:
             target_x: 目标x坐标
             target_y: 目标y坐标
+            xy_blur: 是否添加xy方向的模糊
+            r: 模糊范围(单位：像素)
             speed: 移动速度（秒），None则使用随机速度
             curve_factor: 曲线因子，None则使用配置值
         """
@@ -232,14 +238,15 @@ class HumanSimulator:
             return
         
         # 添加反应延迟
-        self._human_delay(purpose="reaction")
+        self.delay(purpose="reaction")
         
         # 生成移动路径
         start_pos = (current_x, current_y)
         end_pos = (target_x, target_y)
         
-        # 随机决定是否使用曲线路径（70%概率使用曲线）
-        use_curve = random.random() < 0.7
+        # 随机决定是否使用曲线路径（factor%概率使用曲线）
+        factor = 0.95
+        use_curve = random.random() < factor
         
         if use_curve:
             curve_factor = curve_factor or self.mouse_config.curve_factor
@@ -271,7 +278,8 @@ class HumanSimulator:
         
         # 执行移动
         for i, (x, y) in enumerate(path):
-            pyautogui.moveTo(x, y)
+            pyautogui.moveTo(x + xy_blur * random.randrange(1, r),
+                             y + xy_blur * random.randrange(1, r))
             
             # 非匀速移动，模拟人类行为
             if i < len(path) - 1:
@@ -289,7 +297,7 @@ class HumanSimulator:
         
         logger.debug(f"鼠标移动到 ({target_x}, {target_y})，使用{'曲线' if use_curve else '直线'}路径")
     
-    def click_human(self, 
+    def click(self, 
                    x: Optional[int] = None, 
                    y: Optional[int] = None,
                    button: MouseButton = MouseButton.LEFT,
@@ -316,10 +324,10 @@ class HumanSimulator:
             target_x = x + offset_x
             target_y = y + offset_y
             
-            self.move_mouse_human(target_x, target_y)
+            self.move_mouse(target_x, target_y)
         
         # 点击前的微小延迟，模拟人类反应
-        self._human_delay(min_val=0.05, max_val=0.2, purpose="reaction")
+        self.delay(min_val=0.05, max_val=0.2, purpose="reaction")
         
         # 执行点击
         if double_click:
@@ -332,16 +340,16 @@ class HumanSimulator:
             pyautogui.click(button=button.value)
         
         # 点击后的微小停顿
-        self._human_delay(min_val=0.1, max_val=0.3, purpose="thinking")
+        self.delay(min_val=0.1, max_val=0.3, purpose="thinking")
         
         logger.debug(f"在位置 ({x}, {y}) 执行{button.value}{'双击' if double_click else '单击'}")
     
-    def type_human(self, 
+    def type_in(self, 
                   text: str,
                   min_delay: float = 0.05,
-                  max_delay: float = 0.3,
+                  max_delay: float = 0.15,
                   error_probability: float = 0.01,
-                  error_correction_probability: float = 0.8) -> None:
+                  error_correction_probability: float = 1.0) -> None:
         """
         以人类化方式输入文本
         
@@ -424,7 +432,7 @@ class HumanSimulator:
         
         return None
     
-    def scroll_human(self, 
+    def scroll(self, 
                     direction: ScrollDirection = ScrollDirection.DOWN,
                     clicks: int = 1,
                     x: Optional[int] = None,
@@ -440,7 +448,7 @@ class HumanSimulator:
         """
         # 如果指定了位置，先移动到该位置
         if x is not None and y is not None:
-            self.move_mouse_human(x, y)
+            self.move_mouse(x, y)
         
         # 执行滚动
         for i in range(clicks):
@@ -455,7 +463,7 @@ class HumanSimulator:
         
         logger.debug(f"执行{clicks}次{direction.value}滚动")
     
-    def drag_human(self, 
+    def drag(self, 
                   start_x: int, 
                   start_y: int, 
                   end_x: int, 
@@ -472,7 +480,7 @@ class HumanSimulator:
             duration: 拖拽持续时间（秒）
         """
         # 移动到起始位置
-        self.move_mouse_human(start_x, start_y)
+        self.move_mouse(start_x, start_y)
         
         # 按下鼠标
         time.sleep(random.uniform(0.1, 0.3))
@@ -496,7 +504,7 @@ class HumanSimulator:
         
         logger.debug(f"从 ({start_x}, {start_y}) 拖拽到 ({end_x}, {end_y})")
     
-    def press_key_human(self, 
+    def press_key(self, 
                        key: str,
                        presses: int = 1,
                        interval: Optional[float] = None) -> None:
@@ -519,7 +527,7 @@ class HumanSimulator:
         
         logger.debug(f"按下键: {key} {presses}次")
     
-    def hotkey_human(self, *keys: str) -> None:
+    def hotkey(self, *keys: str) -> None:
         """
         以人类化方式按快捷键
         
@@ -568,20 +576,21 @@ class HumanSimulator:
             
             # 动作间延迟
             time.sleep(random.uniform(0.5, 2.0))
+        logger.debug(f"结束空闲行为")
     
     def _micro_mouse_movement(self) -> None:
         """微小鼠标移动"""
         current_x, current_y = pyautogui.position()
         offset_x = random.randint(-20, 20)
         offset_y = random.randint(-20, 20)
-        self.move_mouse_human(current_x + offset_x, current_y + offset_y)
+        self.move_mouse(current_x + offset_x, current_y + offset_y)
     
     def _look_around(self) -> None:
         """查看屏幕其他区域"""
         # 随机选择屏幕一个区域
         target_x = random.randint(100, self.screen_width - 100)
         target_y = random.randint(100, self.screen_height - 100)
-        self.move_mouse_human(target_x, target_y)
+        self.move_mouse(target_x, target_y)
         
         # 停留一会儿
         time.sleep(random.uniform(0.3, 1.0))
@@ -590,11 +599,11 @@ class HumanSimulator:
         """随机滚动"""
         direction = random.choice([ScrollDirection.UP, ScrollDirection.DOWN])
         clicks = random.randint(1, 3)
-        self.scroll_human(direction, clicks)
+        self.scroll(direction, clicks)
     
     def _switch_tabs(self) -> None:
         """切换标签页（模拟Ctrl+Tab）"""
-        self.hotkey_human('ctrl', 'tab')
+        self.hotkey('ctrl', 'tab')
         time.sleep(random.uniform(0.5, 1.5))
     
     def get_behavior_pattern(self) -> dict:
@@ -625,6 +634,14 @@ class HumanSimulator:
             'average_speed': avg_speed,
             'last_action_time': self.last_action_time
         }
+        
+    def to_center(self) -> None:
+        """
+        将鼠标移动到屏幕中心，用于初始化
+        """
+        center_x = self.screen_width // 2
+        center_y = self.screen_height // 2
+        self.move_mouse(center_x, center_y)
 
 
 # 快捷函数接口
@@ -671,19 +688,19 @@ if __name__ == "__main__":
     
     # 测试鼠标移动
     print("测试鼠标移动...")
-    simulator.move_mouse_human(500, 300)
+    simulator.move_mouse(500, 300)
     
     # 测试点击
     print("测试点击...")
-    simulator.click_human(600, 400)
+    simulator.click(600, 400)
     
     # 测试输入
     print("测试文本输入...")
-    simulator.type_human("Hello, World!")
+    simulator.type("Hello, World!")
     
     # 测试滚动
     print("测试滚动...")
-    simulator.scroll_human(ScrollDirection.DOWN, clicks=3)
+    simulator.scroll(ScrollDirection.DOWN, clicks=3)
     
     # 测试空闲行为
     print("测试空闲行为...")

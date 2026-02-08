@@ -1,4 +1,4 @@
-import subprocess
+import random, subprocess
 from src.config import init_config, get_dict_config
 from src.modules import HumanDelayConfig, MouseMoveConfig, HumanSimulator, BrowserController
 
@@ -31,5 +31,12 @@ chrome_args = [
     "--disable-notifications",
 ]
 
+
 browser_process = subprocess.Popen(chrome_args)
-bc.simulator.idle_behavior(min_duration=3, max_duration=5)
+bc.simulator.to_center()
+bc.simulator.move_mouse(256, 101)
+bc.simulator.click()
+bc.simulator.type_in("https://www.jd.com/?country=CN")
+bc.simulator.press_key('enter')
+bc.simulator.delay(5, 10)
+
