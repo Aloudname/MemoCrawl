@@ -131,17 +131,32 @@ search:
 
 # 视觉识别配置
 vision:
-  templates_dir: "templates"            # 模板图片目录
-  match_threshold: 0.8                  # 模板匹配阈值（0-1）
-  ocr_language: "chi_sim+eng"           # OCR识别语言
-  preprocessing:                        # 图像预处理
-    denoise: true                       # 去噪
-    binarization: true                  # 二值化
-    contrast_enhance: true              # 对比度增强
-    resize_factor: 2.0                  # 图像放大倍数
-  debug_save_images: false              # 是否保存调试图像
-  debug_save_dir: "debug_images"        # 调试图像保存目录
-
-
+  capture:
+    mode: full_screen  # full_screen, region, window
+    region: null  # [x1, y1, x2, y2]
+    delay: 0.5
+    save_captures: true
+    save_dir: "captures"
+    preprocessing:
+      resize_factor: 1.0
+      grayscale: false
+      denoise: true
+      enhance_contrast: true
+  
+  crop:
+    method: hybrid  # edge_detection, contour_detection, ml_model, hybrid
+    min_card_width: 200
+    min_card_height: 300
+    max_card_width: 800
+    max_card_height: 600
+    min_aspect_ratio: 0.5
+    max_aspect_ratio: 2.0
+    edge_threshold_low: 50
+    edge_threshold_high: 150
+    contour_min_area: 10000
+    contour_max_area: 200000
+    overlap_threshold: 0.3
+    save_crops: true
+    save_dir: "crops"
 
 
