@@ -1,5 +1,3 @@
-# 价格跟踪器配置文件
-# 版本: 1.0.0
 
 version: "1.0.0"
 environment: "development"  # development, testing, production
@@ -21,9 +19,6 @@ anti_detection:
     scroll_variation: true              # 滚动变化
   rotate_user_agent: true               # 是否轮换User-Agent
   user_agents_pool: []                  # User-Agent池
-
-
-
 
 # 浏览器配置
 browser:
@@ -91,7 +86,6 @@ monitoring:
     webhook_url: ""                     # Webhook URL
     notify_on_errors: ["critical", "error"] # 通知的错误级别
 
-
 # 价格提醒配置
 price_alert:
   enabled: false                        # 是否启用价格提醒
@@ -111,52 +105,3 @@ scheduler:
   retry_attempts: 3                     # 失败重试次数
   retry_delay: 300                      # 重试延迟（秒）
   timezone: "Asia/Shanghai"             # 时区
-
-
-# 搜索配置
-search:
-  keywords:               # 搜索关键词列表
-    - "ddr4内存 笔记本电脑组件 32G"
-  max_pages: 3            # 最大爬取页数
-  scroll_pause: 1.0       # 滚动后暂停时间（秒）
-  items_per_page: 30      # 每页商品数量
-  sort_method: "default"  # 排序方式：default, price_asc, price_desc, sales
-  filter_conditions:      # 筛选条件
-    brands: []            # 品牌筛选
-    price_range: [0, 9999] # 价格范围
-    seller_type: "all"    # 卖家类型：all, jd_self, third_party
-    min_rating: 0.0       # 最低评分
-    min_sales: 0          # 最低销量
-  smart_scroll: true      # 是否智能滚动
-
-# 视觉识别配置
-vision:
-  capture:
-    mode: full_screen  # full_screen, region, window
-    region: null  # [x1, y1, x2, y2]
-    delay: 0.5
-    save_captures: true
-    save_dir: "captures"
-    preprocessing:
-      resize_factor: 1.0
-      grayscale: false
-      denoise: true
-      enhance_contrast: true
-  
-  crop:
-    method: hybrid  # edge_detection, contour_detection, ml_model, hybrid
-    min_card_width: 200
-    min_card_height: 300
-    max_card_width: 800
-    max_card_height: 600
-    min_aspect_ratio: 0.5
-    max_aspect_ratio: 2.0
-    edge_threshold_low: 50
-    edge_threshold_high: 150
-    contour_min_area: 10000
-    contour_max_area: 200000
-    overlap_threshold: 0.3
-    save_crops: true
-    save_dir: "crops"
-
-
