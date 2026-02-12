@@ -34,7 +34,7 @@ def main():
     """主函数"""
     parser = argparse.ArgumentParser(description='MemoCrawl - 商品价格监控系统')
     parser.add_argument('--mode', '-m', choices=['run', 'web', 'process', 'test'], 
-                       default='run', help='运行模式')
+                       default='web', help='运行模式')
     
     args = parser.parse_args()
     logger = setup_logging()
@@ -122,4 +122,5 @@ def main():
         sys.exit(1)
 
 if __name__ == "__main__":
+
     main()
