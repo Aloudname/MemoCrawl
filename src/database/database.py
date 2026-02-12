@@ -1,18 +1,20 @@
-import sqlite3
-import json
-import os
-from typing import List, Dict, Any, Optional
+import os, json, sqlite3
+
+from munch import Munch
 from datetime import datetime
+from typing import List, Dict, Any, Optional
+
 
 class ProductDatabase:
-    def __init__(self, db_name: str = "products.db"):
+    def __init__(self, config: Munch = None):
         """初始化数据库连接"""
-        self.db_name = db_name
+        
+        self.db_name = config.database.path
         self.conn = None
         self.cursor = None
-        self._initialize_database()
+        self._init_db()
     
-    def _initialize_database(self):
+    def _init_db(self):
         """初始化数据库和表结构"""
         try:
             self.conn = sqlite3.connect(self.db_name, check_same_thread=False)
@@ -33,7 +35,7 @@ class ProductDatabase:
                 )
             ''')
             
-            # 创建分类表（可选，用于规范化）
+            # 创建分类表
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS categories (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,7 +44,7 @@ class ProductDatabase:
                 )
             ''')
             
-            # 创建价格历史表（记录价格变动）
+            # 创建价格历史表
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS price_history (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,7 +62,7 @@ class ProductDatabase:
             print(f"数据库初始化失败: {e}")
             raise
     
-    def insert_product(self, name: str, category: str, price: float, 
+    def insert(self, name: str, category: str, price: float, 
                       source_url: Optional[str] = None) -> int:
         """插入单个商品"""
         try:
@@ -91,7 +93,7 @@ class ProductDatabase:
             print(f"插入商品失败: {e}")
             return -1
     
-    def insert_from_json(self, json_data: List[Dict[str, Any]]):
+    def insert_json(self, json_data: List[Dict[str, Any]]):
         """从JSON数据批量插入商品"""
         success_count = 0
         for item in json_data:
@@ -105,22 +107,22 @@ class ProductDatabase:
                     print(f"跳过无效数据: {item}")
                     continue
                 
-                # 尝试转换价格为浮点数
+                # 价格转为浮点
                 try:
                     if isinstance(price, str):
                         price = float(price.replace('¥', '').replace('$', '').replace(',', ''))
                 except:
                     price = 0
                 
-                self.insert_product(name, category, price, item.get('source_url'))
+                self.insert(name, category, price, item.get('source_url'))
                 success_count += 1
                 
             except Exception as e:
-                print(f"处理商品失败 {item}: {e}")
+                print(f"转换价格时处理商品失败 {item}: {e}")
         
         print(f"批量插入完成，成功插入 {success_count} 条记录")
     
-    def import_json_file(self, filepath: str):
+    def import_json(self, filepath: str):
         """从JSON文件导入数据"""
         if not os.path.exists(filepath):
             print(f"文件不存在: {filepath}")
@@ -136,14 +138,14 @@ class ProductDatabase:
                 print("JSON格式错误：应为列表或对象")
                 return
             
-            self.insert_from_json(data)
+            self.insert_json(data)
             
         except json.JSONDecodeError:
             print(f"JSON文件格式错误: {filepath}")
         except Exception as e:
             print(f"导入文件失败: {e}")
     
-    def search_products(self, 
+    def search(self, 
                        name: Optional[str] = None,
                        category: Optional[str] = None,
                        min_price: Optional[float] = None,
@@ -200,16 +202,16 @@ class ProductDatabase:
             for row in self.cursor.fetchall()
         ]
     
-    def export_to_json(self, filepath: str = "products_export.json"):
+    def export2json(self, filepath: str = "products.json"):
         """导出数据到JSON文件"""
-        products = self.search_products(limit=10000)
+        products = self.search(limit=10000)
         
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(products, f, ensure_ascii=False, indent=2)
         
         print(f"数据已导出到 {filepath}，共 {len(products)} 条记录")
     
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_stats(self) -> Dict[str, Any]:
         """获取统计信息"""
         stats = {}
         
@@ -233,11 +235,11 @@ class ProductDatabase:
         
         return stats
     
-    def backup_database(self, backup_path: str = None):
+    def backup_db(self, backup_path: str = None):
         """备份数据库"""
         if backup_path is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_path = f"backup_products_{timestamp}.db"
+            backup_path = f"backup_db/backup_products_{timestamp}.db"
         
         try:
             backup_conn = sqlite3.connect(backup_path)

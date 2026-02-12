@@ -7,7 +7,6 @@ import re
 from typing import Dict, Any, List, Tuple
 from urllib.parse import urlparse
 import logging
-from src.config.exceptions import ConfigValidationError
 
 logger = logging.getLogger(__name__)
 

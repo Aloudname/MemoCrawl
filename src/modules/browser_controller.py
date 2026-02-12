@@ -3,17 +3,11 @@ browser_controller.py
 浏览器控制模块，负责打开和导航浏览器
 """
 
-import webbrowser
-import time
 import logging
 import subprocess
-import os
 
-from typing import Optional, Tuple, List, Any, Dict
-from pathlib import Path
 from munch import Munch
-
-from src.config.manager import get_config
+from typing import Optional
 from src.modules.human_simulator import HumanSimulator
 
 logger = logging.getLogger(__name__)
@@ -21,17 +15,16 @@ logger = logging.getLogger(__name__)
 class BrowserController:
     """浏览器控制器"""
     
-    def __init__(self, simulator: HumanSimulator = None, config: Dict[str, Any] = None):
+    def __init__(self, config: Munch = None):
         """
         初始化浏览器控制器
         
         Args:
             simulator: 人类行为模拟器
         """
-        self.config = Munch.fromDict(config)
-        self.simulator = simulator
+        self.config = config
+        self.simulator = HumanSimulator()
 
-        
         self.window_width = self.config.browser.physical.window_width
         self.window_height = self.config.browser.physical.window_height
         
@@ -64,24 +57,26 @@ class BrowserController:
             
             if self.config.browser.network.disable_images:
                 chrome_args.append("--blink-settings=imagesEnabled=false")
+            else:
+                pass
             
-            if self.config.browser.path.user_data_dir:
-                chrome_args.append(f"--user-data-dir={self.config.browser.path.user_data_dir}")
+            if self.config.browser.network.user_data_dir:
+                chrome_args.append(f"--user-data-dir={self.config.browser.network.user_data_dir}")
+            else:
+                pass
             
             # 启动浏览器
             self.browser_process = subprocess.Popen(chrome_args)
             
             # 等待浏览器启动
-            self.simulator.idle_behavior(min_duration=3, max_duration=5)
+            self.simulator.delay(3, 5)
             
             logger.info("浏览器已成功打开")
-            return True
             
         except Exception as e:
             logger.error(f"打开浏览器失败: {e}")
-            return False
     
-    def navigate_to_url(self, url: str) -> bool:
+    def to_url(self) -> bool:
         """
         导航到指定URL
         
@@ -91,33 +86,25 @@ class BrowserController:
         Returns:
             bool: 是否成功
         """
+        
+        url = self.config.browser.path.url
         try:
             logger.info(f"正在导航到: {url}")
+            self.simulator.delay(4, 5)
             
             # 模拟人类行为：按Ctrl+L聚焦地址栏
             self.simulator.hotkey('ctrl', 'l')
             
             # 等待地址栏聚焦
-            self.simulator.idle_behavior(min_duration=0.5, max_duration=1.0)
-            
-            # 清除当前URL（如果有）
-            self.simulator.press_key('a', presses=1)  # 全选
-            self.simulator.press_key('delete', presses=1)
-            
+            self.simulator.delay(2, 3)
+        
             # 输入URL
-            self.simulator.type_in(
-                url,
-                min_delay=0.05,
-                max_delay=0.2,
-                error_probability=0.01
-            )
+            self.simulator.hotkey('ctrl', 'a')
+            
+            self.simulator.type_in(url, min_delay=0.05, max_delay=0.2)
             
             # 按回车键
             self.simulator.press_key('enter')
-            
-            # 等待页面加载
-            self.simulator.idle_behavior(min_duration=3, max_duration=7)
-            
             logger.info(f"已导航到: {url}")
             return True
             
@@ -140,20 +127,16 @@ class BrowserController:
                 self.simulator.hotkey('alt', 'f4')
                 
                 # 等待浏览器关闭
-                self.simulator.idle_behavior(min_duration=1, max_duration=2)
+                self.simulator.delay(2, 3)
                 
                 # 终止进程
                 self.browser_process.terminate()
                 self.browser_process.wait(timeout=5)
                 
                 logger.info("浏览器已关闭")
-                return True
                 
         except Exception as e:
             logger.error(f"关闭浏览器失败: {e}")
-            return False
-        
-        return False
     
     def get_browser_window_info(self) -> Optional[dict]:
         """
@@ -163,9 +146,7 @@ class BrowserController:
             dict: 窗口信息或None
         """
         try:
-            # 这里可以集成第三方库来获取窗口信息
-            # 例如使用pygetwindow或win32gui
-            # 暂时返回固定信息
+            # 集成第三方库pygetwindow/win32gui获取窗口信息(WIP)
             return {
                 "width": self.window_width,
                 "height": self.window_height,
@@ -184,11 +165,8 @@ class BrowserController:
         try:
             logger.info("刷新页面...")
             self.simulator.hotkey('ctrl', 'r')
-            self.simulator.idle_behavior(min_duration=2, max_duration=4)
-            return True
         except Exception as e:
             logger.error(f"刷新页面失败: {e}")
-            return False
     
     def go_back(self) -> bool:
         """
@@ -200,42 +178,5 @@ class BrowserController:
         try:
             logger.info("返回上一页...")
             self.simulator.hotkey('alt', 'left')
-            self.simulator.idle_behavior(min_duration=2, max_duration=4)
-            return True
         except Exception as e:
             logger.error(f"返回上一页失败: {e}")
-            return False
-        
-    def navi_to_search(self, if_logged: bool = False) -> bool:
-        """
-        导航到搜索页面
-        
-        Args:
-            if_logged: 是否已登录
-            
-        Returns:
-            bool: 是否成功
-        """
-        if not if_logged:
-            self.simulator.move_mouse(285, 240)
-            self.simulator.click(double_click=True)
-            self.simulator.delay(5, 10)
-            self.simulator.move_mouse(1552, 780)
-            self.simulator.click()
-            self.simulator.delay(2, 4)
-            self.simulator.move_mouse(1420, 873)
-            self.simulator.click()
-            self.simulator.delay(1, 2)
-            self.simulator.hotkey('ctrl', 'a')
-            self.simulator.delay(0.1, 0.5)
-            self.simulator.press_key('backspace')
-            self.simulator.type_in(self.config.browser.jd_account.username)
-            self.simulator.move_mouse(1424, 957)
-            self.simulator.click()
-            self.simulator.delay(0.1, 0.2)
-            self.simulator.hotkey('ctrl', 'a')
-            self.simulator.delay(0.1, 0.5)
-            self.simulator.press_key('backspace')
-            self.simulator.type_in(self.config.browser.jd_account.password)
-            self.simulator.move_mouse(1652, 1066)
-            self.simulator.click(double_click=True)
