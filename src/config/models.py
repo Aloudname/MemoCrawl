@@ -4,9 +4,8 @@ models.py
 """
 
 from pydantic import BaseModel, Field, field_validator, SecretStr, ValidationInfo
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Optional, Tuple
 from enum import Enum
-import os
 
 # 枚举类型保持不变...
 class LoginMethod(str, Enum):

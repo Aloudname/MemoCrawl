@@ -4,9 +4,10 @@ manager.py
 """
 
 import logging
+from munch import Munch
 from pathlib import Path
-from typing import Dict, Any, Optional, Union
 from datetime import datetime
+from typing import Dict, Any, Optional, Union
 
 from src.config.exceptions import ConfigError, ConfigFileNotFoundError, ConfigValidationError
 from src.config.models import AppConfig, ConfigAccessor
@@ -393,14 +394,14 @@ def get_config_manager() -> ConfigManager:
     
     return _global_config_manager
 
-def get_config() -> ConfigAccessor:
+def get_config() -> Munch:
     """
     获取配置访问器
     
     Returns:
-        ConfigAccessor实例
+        Munch实例
     """
-    return get_config_manager().config
+    return Munch.fromDict(get_config_manager().dict_config)
 
 def get_dict_config() -> Dict[str, Any]:
     """

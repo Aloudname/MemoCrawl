@@ -3,15 +3,12 @@ login_automator.py
 自动化登录模块，模拟人类登录行为
 """
 
-import time
 import logging
-import random
-from typing import Optional, Dict, Any, List, Tuple, Callable
-from enum import Enum
-from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List, Tuple
 
-from src.modules.browser_controller import elementTuple
+from src.modules.browser_controller import BrowserController
 from src.modules.human_simulator import (HumanSimulator, MouseButton,
                                          ScrollDirection)
 
@@ -290,15 +287,14 @@ class AutoBrowser:
     模拟人类登录行为，支持高度自定义
     """
     
-    def __init__(self):
+    def __init__(self, config: Dict[str, Any] = None):
         """
         初始化登录自动化器
         """
         
-        [simulator, browser_controller] = elementTuple()
-        self.simu = simulator
-        self.BrCt = browser_controller
-        self.config = self.BrCt.config
+        self.config = config
+        self.BrCt = BrowserController(self.config)
+        self.simu = self.BrCt.simulator
         self.Queue = StepQueue(self.simu)
     
     def _enqueue(self) -> bool:

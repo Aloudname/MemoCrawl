@@ -3,17 +3,11 @@ browser_controller.py
 浏览器控制模块，负责打开和导航浏览器
 """
 
-import webbrowser
-import time
 import logging
 import subprocess
-import os
 
-from typing import Optional, Tuple, List, Any, Dict
-from pathlib import Path
 from munch import Munch
-
-from src.config.manager import init_config, get_dict_config
+from typing import Optional
 from src.modules.human_simulator import HumanSimulator
 
 logger = logging.getLogger(__name__)
@@ -21,17 +15,15 @@ logger = logging.getLogger(__name__)
 class BrowserController:
     """浏览器控制器"""
     
-    def __init__(self, simulator: HumanSimulator = None, config: Dict[str, Any] = None):
+    def __init__(self, config: Munch = None):
         """
         初始化浏览器控制器
         
         Args:
             simulator: 人类行为模拟器
         """
-        init_config()
-        config = get_dict_config()
-        self.config = Munch.fromDict(config)
-        self.simulator = simulator
+        self.config = config
+        self.simulator = HumanSimulator()
 
         self.window_width = self.config.browser.physical.window_width
         self.window_height = self.config.browser.physical.window_height
@@ -188,10 +180,3 @@ class BrowserController:
             self.simulator.hotkey('alt', 'left')
         except Exception as e:
             logger.error(f"返回上一页失败: {e}")
-            
-def elementTuple() -> Tuple[HumanSimulator, BrowserController]:
-    init_config()
-    config = get_dict_config()
-    hs = HumanSimulator()
-    browser_controller = BrowserController(simulator=hs, config=config)
-    return (hs, browser_controller)

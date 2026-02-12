@@ -2,7 +2,7 @@
 from src.modules.human_simulator import (MouseButton, ScrollDirection,
                                          HumanDelayConfig, MouseMoveConfig,
                                          HumanSimulator)
-from src.modules.browser_controller import BrowserController, elementTuple
+from src.modules.browser_controller import BrowserController
 from src.modules.auto_browser import (AutoBrowser, StepQueue,
                                       AbstractStep, ScrollStep,
                                       DelayStep, MoveStep,
@@ -16,7 +16,7 @@ __all__ = [
     'MouseMoveConfig', 'HumanSimulator',
     'AutoBrowser', 'StepQueue',
     'elementTuple', 'AbstractStep',
-    'ScrollStep', 'ToCenterStep'
+    'ScrollStep', 'ToCenterStep',
     'DelayStep', 'MoveStep',
     'ClickStep', 'TypeStep',
     'HotkeyStep']

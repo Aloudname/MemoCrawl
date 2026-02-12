@@ -1,18 +1,20 @@
 # [file name]: src/database/web_app.py
-from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
+from flask import Flask, render_template, request, jsonify, send_file, redirect
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 import io
 import json
-from datetime import datetime
 from src.database.database import ProductDatabase
 from src.database.visualization import register_visualization
 
 app = Flask(__name__)
 
 # 全局数据库管理器
-db = ProductDatabase("products.db")
+from src.config.manager import init_config, get_config
+
+init_config()
+db = ProductDatabase(get_config())
 
 # 注册可视化蓝图
 app = register_visualization(app)
@@ -20,14 +22,14 @@ app = register_visualization(app)
 @app.route('/')
 def index():
     """主页面"""
-    stats = db.get_statistics()
+    stats = db.get_stats()
     categories = db.get_categories()
     
     # 获取最近添加的商品
-    recent_products = db.search_products(limit=10)
+    recent_products = db.search(limit=10)
     
     # 获取价格变化最大的商品
-    all_products = db.search_products(limit=100)
+    all_products = db.search(limit=100)
     products_with_history = []
     
     for product in all_products:
@@ -70,7 +72,7 @@ def get_products():
     limit = request.args.get('limit', 100, type=int)
     
     # 获取所有产品
-    products = db.search_products(
+    products = db.search(
         name=name,
         category=category,
         min_price=min_price,
@@ -94,7 +96,7 @@ def add_product():
     data = request.json
     
     try:
-        product_id = db.insert_product(
+        product_id = db.insert(
             name=data['name'],
             category=data['category'],
             price=float(data['price']),
@@ -131,7 +133,7 @@ def import_json():
             success_count = 0
             for item in data:
                 try:
-                    db.insert_product(
+                    db.insert(
                         name=item.get('name', ''),
                         category=item.get('category', ''),
                         price=float(item.get('price', 0)),
@@ -161,10 +163,10 @@ def export_data():
     format_type = request.args.get('format', 'json')
     
     if format_type == 'json':
-        return jsonify(db.search_products(limit=10000))
+        return jsonify(db.search(limit=10000))
     
     elif format_type == 'csv':
-        products = db.search_products(limit=10000)
+        products = db.search(limit=10000)
         df = pd.DataFrame(products)
         
         output = io.StringIO()
@@ -179,7 +181,7 @@ def export_data():
         )
     
     elif format_type == 'excel':
-        products = db.search_products(limit=10000)
+        products = db.search(limit=10000)
         df = pd.DataFrame(products)
         
         output = io.BytesIO()
@@ -198,14 +200,14 @@ def export_data():
 @app.route('/api/stats')
 def get_stats():
     """获取统计信息API"""
-    stats = db.get_statistics()
+    stats = db.get_stats()
     
     # 获取分类统计
     categories = db.get_categories()
     category_stats = []
     
     for category in categories:
-        products = db.search_products(category=category, limit=1000)
+        products = db.search(category=category, limit=1000)
         if products:
             avg_price = sum(p['price'] for p in products) / len(products)
             category_stats.append({
@@ -222,7 +224,7 @@ def get_chart():
     """生成图表API"""
     chart_type = request.args.get('type', 'category')
     
-    products = db.search_products(limit=1000)
+    products = db.search(limit=1000)
     df = pd.DataFrame(products)
     
     if len(df) > 0:
@@ -297,7 +299,7 @@ def get_recent_changes():
     days = request.args.get('days', 7, type=int)
     
     # 获取所有商品
-    products = db.search_products(limit=100)
+    products = db.search(limit=100)
     
     changes = []
     for product in products:

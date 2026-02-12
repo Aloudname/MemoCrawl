@@ -1,36 +1,40 @@
-# [file name]: src/modules/data_processor.py
 """
+data_processor.py
 CSV数据处理模块
-负责清洗、转换和导入CSV数据到数据库
+清洗、转换、导入CSV数据到数据库
 """
-import pandas as pd
-import re
-from datetime import datetime
-from typing import List, Dict, Any, Optional
-import os
+
+import os, re
 import logging
+import pandas as pd
+from munch import Munch
+from datetime import datetime
+from typing import List, Dict, Any
+
 from src.database.database import ProductDatabase
 
 class CSVDataProcessor:
     """CSV数据处理器"""
     
-    def __init__(self, db_path: str = "products.db"):
+    def __init__(self, config: Munch = None):
         """
         初始化数据处理器
         
         Args:
             db_path: 数据库文件路径
+            config: 配置字典
         """
-        self.db = ProductDatabase(db_path)
+
+        self.config = config
         self.logger = logging.getLogger(__name__)
+        self.db = ProductDatabase(self.config)
     
-    def clean_price(self, price_str: str) -> float:
+    def do_price(self, price_str: str) -> float:
         """
         清洗价格字符串，转换为浮点数
         
         Args:
             price_str: 价格字符串，如 "¥ 3199", "¥ 3399.00"
-            
         Returns:
             清洗后的价格浮点数
         """
@@ -51,7 +55,7 @@ class CSVDataProcessor:
                 return 0.0
         return 0.0
     
-    def extract_brand(self, product_name: str) -> str:
+    def do_brand(self, product_name: str) -> str:
         """
         从商品名中提取品牌
         
@@ -65,12 +69,7 @@ class CSVDataProcessor:
             return "未知"
             
         # 常见品牌关键词
-        brands = [
-            "威刚", "ADATA", "金士顿", "Kingston", "金邦", "GEIL",
-            "英睿达", "crucial", "镁光", "Micron", "海力士", "SK Hynix",
-            "三星", "Samsung", "联想", "Lenovo", "七彩虹", "Colorful",
-            "机械师", "雷克沙", "Lexar", "枭鲸", "汉存", "HC"
-        ]
+        brands = self.config.data_processing.brands
         
         product_name = str(product_name)
         for brand in brands:
@@ -78,7 +77,7 @@ class CSVDataProcessor:
                 return brand
         return "其他"
     
-    def extract_specs(self, product_name: str) -> Dict[str, str]:
+    def do_specs(self, product_name: str) -> Dict[str, str]:
         """
         从商品名中提取规格信息
         
@@ -100,21 +99,24 @@ class CSVDataProcessor:
             specs['capacity'] = f"{capacity_match.group(1)}GB"
         
         # 提取频率
-        freq_match = re.search(r'DDR5\s*(\d{4,5})', name) or re.search(r'(\d{4})\s*[Mm]?[Hh]z', name)
+        freq_match = re.search(r'DDR4\s*(\d{4,5})', name) \
+                    or re.search(r'DDR5\s*(\d{4,5})', name) \
+                    or re.search(r'(\d{4})\s*[Mm]?[Hh]z', name)
+                    
         if freq_match:
             specs['frequency'] = f"{freq_match.group(1)}MHz"
         
-        # # 提取类型（笔记本/台式机）
-        # if any(keyword in name for keyword in ["笔记本", "laptop", "LAPTOP"]):
-        #     specs['type'] = "笔记本"
-        # elif any(keyword in name for keyword in ["台式", "desktop", "DESKTOP"]):
-        #     specs['type'] = "台式机"
-        # else:
-        #     specs['type'] = "内存条"
+        # 提取类型
+        if any(keyword in name for keyword in ["笔记本", "laptop", "LAPTOP"]):
+            specs['type'] = "笔记本内存"
+        elif any(keyword in name for keyword in ["台式", "desktop", "DESKTOP"]):
+            specs['type'] = "台式机内存"
+        else:
+            specs['type'] = "内存条"
         
         return specs
     
-    def process_csv_file(self, csv_path: str, category: str = "内存条") -> List[Dict[str, Any]]:
+    def process(self, csv_path: str, category: str = "内存条") -> List[Dict[str, Any]]:
         """
         处理CSV文件，返回清洗后的数据
         
@@ -126,31 +128,26 @@ class CSVDataProcessor:
             清洗后的商品数据列表
         """
         try:
-            # 读取CSV文件
             df = pd.read_csv(csv_path, encoding='utf-8')
             self.logger.info(f"成功读取CSV文件: {csv_path}, 共 {len(df)} 条记录")
             
-            # 检查必要列是否存在
+            # 检查必要列
             required_columns = ['商品名', '价格']
             missing_cols = [col for col in required_columns if col not in df.columns]
             if missing_cols:
                 raise ValueError(f"CSV文件缺少必要列: {missing_cols}")
             
-            # 清洗和转换数据
+            # 清洗转换
             processed_data = []
             for _, row in df.iterrows():
                 try:
-                    # 提取基本信息
                     product_name = str(row['商品名']).strip()
                     
-                    # 清洗价格
-                    price = self.clean_price(row['价格'])
+                    price = self.do_price(row['价格'])
                     
-                    # 提取品牌和规格
-                    brand = self.extract_brand(product_name)
-                    specs = self.extract_specs(product_name)
+                    brand = self.do_brand(product_name)
+                    specs = self.do_specs(product_name)
                     
-                    # 生成详细描述
                     description = row.get('概述', '') if '概述' in df.columns else ''
                     source = row.get('来源', '') if '来源' in df.columns else ''
                     
@@ -170,7 +167,7 @@ class CSVDataProcessor:
                         'specifications': spec_str,
                         'description': str(description) if not pd.isna(description) else '',
                         'source': str(source) if not pd.isna(source) else '京东',
-                        'source_url': '',  # CSV中可能没有URL
+                        'source_url': '',
                         'scraped_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     }
                     
@@ -195,7 +192,9 @@ class CSVDataProcessor:
             self.logger.error(f"处理CSV文件失败: {e}")
             return []
     
-    def save_to_database(self, processed_data: List[Dict[str, Any]], update_existing: bool = True) -> Dict[str, int]:
+    def to_database(self,
+                    processed_data: List[Dict[str, Any]],
+                    update_existing: bool = True) -> Dict[str, int]:
         """
         将处理后的数据保存到数据库
         
@@ -216,7 +215,7 @@ class CSVDataProcessor:
         for product in processed_data:
             try:
                 # 检查是否已存在同名商品
-                existing = self.db.search_products(
+                existing = self.db.search(
                     name=product['name'],
                     category=product['category'],
                     limit=1
@@ -225,8 +224,7 @@ class CSVDataProcessor:
                 if existing and update_existing:
                     # 更新现有商品价格
                     product_id = existing[0]['id']
-                    # 这里可以调用数据库更新方法，或者重新插入（因为数据库有唯一约束）
-                    self.db.insert_product(
+                    self.db.insert(
                         name=product['name'],
                         category=product['category'],
                         price=product['price'],
@@ -235,7 +233,7 @@ class CSVDataProcessor:
                     stats['updated'] += 1
                 else:
                     # 插入新商品
-                    self.db.insert_product(
+                    self.db.insert(
                         name=product['name'],
                         category=product['category'],
                         price=product['price'],
@@ -251,7 +249,8 @@ class CSVDataProcessor:
                         f"更新{stats['updated']}, 失败{stats['failed']}")
         return stats
     
-    def import_csv_to_db(self, csv_path: str, category: str = "内存条") -> Dict[str, Any]:
+    def import2db(self, csv_path: str,
+                  category: str = "内存条") -> Dict[str, Any]:
         """
         完整的CSV导入流程
         
@@ -270,18 +269,14 @@ class CSVDataProcessor:
         }
         
         try:
-            # 1. 处理CSV数据
-            processed_data = self.process_csv_file(csv_path, category)
+            processed_data = self.process(csv_path, category)
             
             if not processed_data:
                 result['message'] = '没有有效数据可以导入'
                 return result
             
-            # 2. 保存到数据库
-            save_stats = self.save_to_database(processed_data)
-            
-            # 3. 获取数据库统计
-            db_stats = self.db.get_statistics()
+            save_stats = self.to_database(processed_data)
+            db_stats = self.db.get_stats()
             
             result.update({
                 'success': True,
@@ -291,7 +286,7 @@ class CSVDataProcessor:
                     'db_save_stats': save_stats,
                     'database_stats': db_stats
                 },
-                'data': processed_data[:10]  # 返回前10条作为样本
+                'data': processed_data[:10]  # 返回前10条作样本
             })
             
         except Exception as e:
@@ -300,7 +295,7 @@ class CSVDataProcessor:
         
         return result
     
-    def get_price_history_chart_data(self, product_name: str = None, 
+    def get_price_history_chart(self, product_name: str = None, 
                                     category: str = None, 
                                     days: int = 30) -> Dict[str, Any]:
         """
@@ -316,7 +311,7 @@ class CSVDataProcessor:
         """
         try:
             # 获取商品列表
-            products = self.db.search_products(
+            products = self.db.search(
                 name=product_name,
                 category=category,
                 limit=50
@@ -398,9 +393,9 @@ if __name__ == "__main__":
     processor = CSVDataProcessor("products.db")
     
     # 测试处理CSV文件
-    test_csv = "data.csv"  # 假设CSV文件在当前目录
+    test_csv = "data.csv"
     if os.path.exists(test_csv):
-        result = processor.import_csv_to_db(test_csv, "内存条")
+        result = processor.import2db(test_csv, "内存条")
         print(f"导入结果: {result}")
     else:
         print(f"测试CSV文件不存在: {test_csv}")

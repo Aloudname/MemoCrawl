@@ -8,7 +8,7 @@ import random
 import time
 import math
 import numpy as np
-from typing import Tuple, List, Optional, Union
+from typing import Tuple, List, Optional
 from dataclasses import dataclass
 from enum import Enum
 import logging

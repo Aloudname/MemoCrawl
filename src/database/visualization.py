@@ -2,21 +2,23 @@
 数据可视化模块
 扩展Web界面，支持价格走势图
 """
-from flask import Blueprint, render_template, jsonify, request
-import plotly.graph_objects as go
 import plotly.io as pio
-from datetime import datetime, timedelta
-import json
+import plotly.graph_objects as go
+from flask import Blueprint, render_template, jsonify, request
+
+from src.config import init_config, get_config
 from src.database.database import ProductDatabase
 
+
+init_config()
+db = ProductDatabase(get_config())
 visualization_bp = Blueprint('visualization', __name__, url_prefix='/viz')
-db = ProductDatabase("products.db")
 
 @visualization_bp.route('/price_trends')
 def price_trends():
     """价格走势图页面"""
     categories = db.get_categories()
-    products = db.search_products(limit=50)
+    products = db.search(limit=50)
     
     return render_template('price_trends.html', 
                          categories=categories, 
@@ -88,7 +90,7 @@ def get_comparison_chart():
         
         for pid in product_id_list[:10]:  # 最多比较10个商品
             # 获取商品信息
-            products = db.search_products(limit=1)
+            products = db.search(limit=1)
             if not products:
                 continue
             
@@ -138,7 +140,7 @@ def get_category_stats():
     """获取分类统计图表"""
     try:
         # 获取所有商品
-        products = db.search_products(limit=1000)
+        products = db.search(limit=1000)
         
         if not products:
             return jsonify({'error': '没有商品数据'}), 404
