@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  # 可选：允许手动触发
+  # 允许手动触发
   workflow_dispatch:
 
 jobs:
@@ -31,14 +31,14 @@ jobs:
         jekyll/builder:latest \
         /bin/bash -c "chmod -R 777 /srv/jekyll && jekyll build --future"
     
-    # 可选：上传构建产物
+    # 上传构建产物
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: site
         path: ./_site
     
-    # 可选：部署到GitHub Pages
+    # 部署到GitHub Pages
     # - name: Deploy to GitHub Pages
     #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     #   uses: peaceiris/actions-gh-pages@v3
