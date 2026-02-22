@@ -11,6 +11,7 @@ from typing import Optional, Dict, Any, List, Tuple
 from src.modules.browser_controller import BrowserController
 from src.modules.human_simulator import (HumanSimulator, MouseButton,
                                          ScrollDirection)
+from src.modules.vision import VisionEngine, CSVExporter
 
 logger = logging.getLogger(__name__)
 
@@ -305,6 +306,10 @@ class AutoBrowser:
         self.BrCt = BrowserController(self.config)
         self.simu = self.BrCt.simulator
         self.Queue = StepQueue(self.simu)
+        
+        # 初始化视觉引擎（用于替代Chrome插件的CSV导出）
+        self.vision_engine = VisionEngine.from_munch_config(self.config)
+        self.csv_exporter = CSVExporter()
     
     def _enqueue(self) -> bool:
         try:
@@ -539,4 +544,102 @@ class AutoBrowser:
             
         except Exception as e:
             logger.error(f"注销失败: {e}")
+            return False
+    
+    # ==================== 视觉识别模式 ====================
+    
+    def envisit_vision(self) -> bool:
+        """
+        使用视觉识别模式的访问流程
+        
+        替代原有的Chrome插件导出方案：
+        1. 打开浏览器、导航到搜索页
+        2. 输入搜索关键词
+        3. 等待页面加载
+        4. 使用视觉引擎截图 → 识别商品卡片 → 提取信息
+        5. 导出为CSV (格式与data_processor兼容)
+        
+        Returns:
+            bool: 是否成功
+        """
+        logger.info("开始视觉识别模式访问流程...")
+        try:
+            self.is_logged_in = False
+            self.last_error = None
+            
+            # 开启浏览器并导航
+            logger.info(f"搜索关键词：{self.config.browser.search.keyword}")
+            self.BrCt.open_browser()
+            self.BrCt.to_url()
+            
+            # 搜索关键词（简化的步骤队列，只做搜索）
+            self._enqueue_search_only()
+            self.Queue()
+            
+            # 等待搜索结果加载
+            self.simu.delay(8, 12, purpose="thinking")
+            
+            # 使用视觉引擎识别当前页面
+            logger.info("开始视觉识别...")
+            result = self.vision_engine.capture_and_recognize(
+                source="京东"
+            )
+            
+            if result.valid_card_count == 0:
+                logger.warning(f"视觉识别未找到有效商品卡片 "
+                              f"(总检测: {result.card_count})")
+                # 尝试滚动后重试
+                logger.info("尝试滚动页面后重新识别...")
+                self.simu.scroll(direction=ScrollDirection.DOWN, clicks=5)
+                self.simu.delay(3, 5)
+                
+                result = self.vision_engine.capture_and_recognize(
+                    source="京东"
+                )
+            
+            if result.valid_card_count == 0:
+                logger.error("视觉识别失败：无法检测到商品信息")
+                return False
+            
+            # 导出为CSV (写到config中指定的csv_path)
+            csv_path = self.config.data_processing.csv_path
+            CSVExporter.export_to_data_csv(result, csv_path)
+            
+            logger.info(f"视觉识别完成: {result.valid_card_count} 个商品, "
+                        f"CSV已保存至 {csv_path}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"视觉识别模式访问失败: {e}")
+            return False
+    
+    def _enqueue_search_only(self) -> bool:
+        """
+        仅入队搜索相关的步骤（不包含Chrome插件操作）
+        用于视觉识别模式
+        """
+        try:
+            self.Queue.clear()
+            self.Queue.enqueue(
+                MoveStep(step='Move to search box',
+                        terminate=self.config.browser.coord.search_box),
+                DelayStep(step='Waiting 5s',
+                        min_val=5, max_val=6),
+                ClickStep(step='Click LEFT'),
+                DelayStep(step='Waiting 2s',
+                        min_val=2, max_val=3),
+                HotkeyStep(step='Ctrl+A',
+                        keys=['ctrl', 'a']),
+                PasteStep(step='Paste search keyword',
+                        text=self.config.browser.search.keyword),
+                PressKeyStep(step='Enter',
+                        key='enter'),
+                DelayStep(step='Waiting for search results',
+                        min_val=10, max_val=15),
+                ToCenterStep(step='Move to center'),
+            )
+            logger.info(f"搜索步骤队列已加载: {len(self.Queue)} 步")
+            return True
+        except Exception as e:
+            logger.error(f"加载搜索步骤失败: {e}")
             return False

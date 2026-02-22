@@ -536,6 +536,23 @@ class HumanSimulator:
         
         logger.debug(f"按下键: {key} {presses}次")
     
+    def paste(self, text: str) -> None:
+        """
+        模拟粘贴文本（通过剪贴板）
+        
+        将文本复制到剪贴板后使用 Ctrl+V 粘贴，
+        比逐字输入更快且支持中文。
+        
+        Args:
+            text: 要粘贴的文本
+        """
+        import pyperclip
+        pyperclip.copy(text)
+        time.sleep(random.uniform(0.1, 0.3))
+        pyautogui.hotkey('ctrl', 'v')
+        time.sleep(random.uniform(0.2, 0.5))
+        logger.debug(f"粘贴文本: '{text[:30]}...'" if len(text) > 30 else f"粘贴文本: '{text}'")
+
     def hotkey(self, *keys: str) -> None:
         """
             快捷键

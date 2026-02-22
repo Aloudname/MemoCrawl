@@ -8,6 +8,10 @@ from src.modules.auto_browser import (AutoBrowser, StepQueue,
                                       DelayStep, MoveStep,
                                       ClickStep, TypeStep,
                                       HotkeyStep, ToCenterStep)
+from src.modules.vision import (VisionEngine, VisionConfig,
+                                ScreenCapture, OCREngine,
+                                ElementDetector, ProductClassifier,
+                                DebugVisualizer, CSVExporter)
 
 
 __all__ = [
@@ -19,4 +23,10 @@ __all__ = [
     'ScrollStep', 'ToCenterStep',
     'DelayStep', 'MoveStep',
     'ClickStep', 'TypeStep',
-    'HotkeyStep']
+    'HotkeyStep',
+    # 视觉模块
+    'VisionEngine', 'VisionConfig',
+    'ScreenCapture', 'OCREngine',
+    'ElementDetector', 'ProductClassifier',
+    'DebugVisualizer', 'CSVExporter',
+]

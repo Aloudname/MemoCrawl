@@ -1,0 +1,118 @@
+
+version: 1.0.0
+environment: development  # development, testing, production
+debug: false
+
+# 浏览器配置
+browser:
+  login_method: password # 默认登录方式：password, qr_code, sms
+  path:
+    chrome_path: path_to/chrome.exe       # Chrome可执行文件路径，null则自动查找
+    url: https://www.jd.com/?country=CN
+  physical:
+    window_width: 2560      # 浏览器窗口宽度
+    window_height: 1660      # 浏览器窗口高度
+  network:
+    user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+    headless: false         # 是否无头模式运行
+    disable_images: true    # 是否禁用图片加载以加速
+    proxy: null             # 代理服务器，如 "http://127.0.0.1:8080"
+    user_data_dir: cookie/JD     # 用户数据目录，用于保存cookies
+  # 京东账户配置
+  jd_account:
+    username: JD_15153715199                # 京东用户名/手机号
+    password: Chr123456                # 京东密码（将自动加密）
+    login_method: "password"  # 登录方式：password, qr_code, sms
+    max_login_attempts: 3     # 最大登录尝试次数
+    login_timeout: 60         # 登录超时时间（秒）
+    save_cookies: true        # 是否保存cookies
+    cookies_expiry_days: 7    # cookies过期天数
+  search:
+    keyword: 笔记本电脑内存 DDR5 32G # 搜索关键词
+  coord:
+    search_box: [650, 250]   # 搜索框坐标
+    plug_in: [2340, 95]      # 插件按钮坐标
+    export: [575, 350]      # 导出按钮坐标
+    plug_out: [1036, 268]   # 关闭插件按钮坐标
+  
+# 数据库配置
+database:
+  type: "sqlite"                        # 数据库类型：sqlite, mysql, postgresql
+  path: products.db                     # SQLite数据库文件路径
+  host: localhost                       # 数据库主机
+  port: 5050                            # 数据库端口
+  name: products                        # 数据库名称
+  user: ""                              # 数据库用户名
+  password: ""                          # 数据库密码（将自动加密）
+  backup_days: 7                        # 备份保留天数
+  auto_backup: true                     # 是否自动备份
+  backup_dir: "backups"                 # 备份目录
+  connection_pool_size: 5               # 数据库连接池大小
+
+# 数据处理器配置
+data_processing:
+  csv_path: "C:/Users/34739/Downloads/data.csv"  # CSV文件路径
+  default_category: "内存条"                      # 默认商品分类
+  cleanup_old_files: true                         # 是否清理旧文件
+  keep_latest_files: 3                           # 保留最新的文件数量
+  auto_import: true                              # 是否自动导入CSV到数据库
+
+# 人类行为模拟配置
+human_simulator:
+  enable_random_behavior: false         # 是否启用随机行为
+  min_delay: 0.1          # 最小延迟（秒）
+  max_delay: 0.5          # 最大延迟（秒）
+  think_time_min: 0.2     # 最小思考时间（秒）
+  think_time_max: 1.0     # 最大思考时间（秒）
+  speed_min: 0.3          # 最小移动速度（秒）
+  speed_max: 0.8          # 最大移动速度（秒）
+  curve_factor: 0.3       # 鼠标曲线移动程度（0-1）
+  jitter_factor: 0.05     # 鼠标抖动程度（0-1）
+  error_probability: 0.01 # 输入错误概率（0-1）
+  error_correction_probability: 1.0  # 纠错概率（0-1）
+  wait_after_login: 5.0                 # 登录后等待时间（秒）
+
+# 视觉识别与定位模块配置
+vision:
+  # 截图配置
+  capture_region: null                   # 截图区域 [x,y,w,h]，null则全屏截图
+  capture_delay: 0.5                     # 截图前延迟(秒)，等待页面渲染稳定
+  screenshot_save_dir: "debug/screenshots"  # 截图保存目录
+  
+  # 商品卡片检测配置
+  detection_method: "contour"            # 检测方法: contour/edge/color/grid
+  min_card_width: 200                    # 卡片最小宽度(px)
+  min_card_height: 150                   # 卡片最小高度(px)
+  max_card_width: 800                    # 卡片最大宽度(px)
+  max_card_height: 600                   # 卡片最大高度(px)
+  card_aspect_ratio_range: [0.3, 3.0]   # 卡片宽高比范围
+  iou_threshold: 0.3                     # 重叠去重阈值
+  
+  # OCR配置 (需要安装 Tesseract OCR 引擎)
+  ocr_lang: "chi_sim+eng"               # Tesseract语言包 (中文简体+英文)
+  tesseract_cmd: ""                      # tesseract.exe路径，空则使用系统PATH
+  ocr_psm: 6                            # 页面分割模式 (6=假设为单一文本块)
+  ocr_confidence_threshold: 30.0         # OCR置信度阈值 (0-100)
+  
+  # 商品图片分类器配置
+  reference_image_dir: "data/reference_images"  # 参考图片库目录
+  feature_match_threshold: 10            # 特征匹配最低好匹配数
+  
+  # 调试配置
+  debug_mode: true                       # 是否开启调试模式 (保存中间结果)
+  save_debug_images: true                # 是否保存调试标注图
+  debug_output_dir: "debug/vision"       # 调试输出目录
+  
+  # 快捷键配置
+  hotkey_capture: "ctrl+shift+c"         # 触发截图识别的快捷键
+
+# 数据可视化配置
+visualization:
+  price_history_days: 30                         # 价格历史显示天数
+  update_interval_hours: 24                      # 数据更新间隔(小时)
+  chart_colors:                                  # 图表颜色配置
+    - "#1f77b4"  # 蓝色
+    - "#ff7f0e"  # 橙色
+    - "#2ca02c"  # 绿色
+    - "#d62728"  # 红色
+    - "#9467bd"  # 紫色

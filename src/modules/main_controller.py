@@ -22,6 +22,7 @@ class MainController:
         """
         初始化主控制器
         """
+        self.logger = logging.getLogger(self.__class__.__name__)
 
         init_config()
         self.config = get_config()
@@ -60,17 +61,26 @@ class MainController:
             self.logger.error(f"初始化模块失败: {e}")
             return False
     
-    def do_Crawl(self):
+    def do_Crawl(self, use_vision: bool = True):
         """
         运行自动化任务
         包括：登录、搜索、导出CSV、导入数据库
+        
+        Args:
+            use_vision: True则使用视觉识别模式，False则使用原有Chrome插件模式
         """
         task_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.logger.info(f"开始自动化任务: {task_id}")
+        self.logger.info(f"开始自动化任务: {task_id} (模式: {'视觉识别' if use_vision else 'Chrome插件'})")
         
         try:
             self.logger.info("开始执行自动化流程...")
-            success = self.auto_browser.envisit()
+            
+            if use_vision:
+                # 视觉识别模式
+                success = self.auto_browser.envisit_vision()
+            else:
+                # 原有Chrome插件模式
+                success = self.auto_browser.envisit()
             
             if not success:
                 self.logger.error("自动化流程执行失败")
